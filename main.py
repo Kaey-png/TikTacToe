@@ -1,162 +1,96 @@
-import math
 import copy
-
-print("------------------Tic Tak Toe---------------------")
-print("O-------X")
 
 X = "X"
 O = "O"
 empty = None
 
+
 def initialState():
-    return [
-        [empty, empty, empty],
-        [empty, empty, empty],
-        [empty, empty, empty]
-    ]
+    return [[empty] * 3 for _ in range(3)]
+
 
 def player(board):
-    count_x = sum(row.count(X) for rows in board)
-    count_o = sum(row.count(O) for rows in board)
-    
-    
-    if count_x > count_o:
-        value = "O"
-        
-    else:
-        value = "X"
-    
-    return value
+    count_x = sum(row.count(X) for row in board)
+    count_o = sum(row.count(O) for row in board)
+    return O if count_x > count_o else X
+
 
 def actions(board):
-    possibleactions = []
-    
-    for i in range(3):
-        for j in range(3):
-            if (board[i][j] == empty):
-                possibleactions.append((i, j))
-    
-    return possibleactions
+    return [(i, j) for i in range(3) for j in range(3) if board[i][j] == empty]
+
 
 def result(board, action):
-    if action == None:
-        return
-    
-    copiedBoard = copy.deepcopy(board)
+    if action is None:
+        return None
+    newBoard = copy.deepcopy(board)
     i, j = action
-    count_x = sum(row.count(X) for rows in board)
-    count_o = sum(row.count(O) for rows in board)
-    
-    copiedBoard[i][j] = player(board)
-        
-    return copiedBoard
+    newBoard[i][j] = player(board)
+    return newBoard
+
 
 def winner(board):
-    xCount = 0
-    oCount = 0
-    
-    for row in board:
-        xCount = row.count("X")
-        oCount = row.count("Y")
-        
-    if xCount == 3:
-        return X
-    elif oCount == 3:
-        return O
+    lines = []
+    lines.extend(board)                                            # rows
+    lines.extend([board[0][c], board[1][c], board[2][c]] for c in range(3))  # columns
+    lines.append([board[0][0], board[1][1], board[2][2]])          # diagonal 1
+    lines.append([board[0][2], board[1][1], board[2][0]])          # diagonal 2
 
-    xCount = 0
-    oCount = 0
-    for i in range(3):
-        for j in range(3):
-            if board[j][i] == X:
-                xCount += 1
-            elif board[j][i] == Y:
-                oCount += 1
+    for line in lines:
+        if line.count(X) == 3:
+            return X
+        if line.count(O) == 3:
+            return O
+    return None
 
-            if xCount == 3:
-                return X
-            elif oCount == 3:
-                return O
-        xCount = 0
-        oCount = 0
-    
-    xCount = 0
-    oCount = 0  
-    
-    diagonal1 = [board[0][0], board[1][1], board[2][2]]
-    diagonal2 = [board[0][2], board[1][1], board[2][0]]
-    
-    xCount = diagonal1.count("X")
-    oCount = diagonal1.count("O")
-    
-    if xCount == 3:
-        return X
-    elif oCount == 3:
-        return O
-    
-    xCount = diagonal2.count("X")
-    oCount = diagonal2.count("X")
-    
-    if xCount == 3:
-        return X
-    elif oCount == 3:
-        return O
-    
-    
-    xCount = 0
-    oCount = 0
-    
+
+def utility(board):
+    w = winner(board)
+    if w == X:
+        return 1
+    if w == O:
+        return -1
+    return 0
+
 
 def terminal(board):
-    utilityVal = utility(board)
-    emptyCount = sum(row.count(empty) for row in board)
-    if utilityVal == 1:
-        return True
-    elif utilityVal == -1:
-        return True
-    elif emptyCount == 0:
-        return True
-    else:
-        return False
-    
-def utility(board):
-    winnerofMatch = winner(board)
-    
-    if winnerofMatch == "X":
-        return 1
-    elif winnerofMatch == "O":
-        return -1
-    else:
-        return 0
+    return winner(board) is not None or all(cell != empty for row in board for cell in row)
 
-def minimax(board):
-    possibleActions = actions(board)
-    copiedBoard = copy.deepcopy(board)
-    
-    if currentPlayer == 'X':
-        v = float('-inf')
-        toBeAction = None
-        
-        for action in possibleActions:
-            resultByAction = result(copiedBoard, action)
-            value = minValue(resultByAction)
-            if value < v:
-                v = value
-                toBeAction = action
-        return toBeAction
 
 def maxValue(board):
     if terminal(board):
         return utility(board)
     v = float('-inf')
     for action in actions(board):
-        v = max(v, minValue(result(board, action))) 
+        v = max(v, minValue(result(board, action)))
     return v
+
 
 def minValue(board):
     if terminal(board):
         return utility(board)
-    v = float('-inf')
+    v = float('inf')
     for action in actions(board):
-        v = max(vmaxValue(result(board, action)))   
-    
+        v = min(v, maxValue(result(board, action)))
+    return v
+
+
+def minimax(board):
+    if terminal(board):
+        return None
+
+    bestAction = None
+    if player(board) == X:
+        v = float('-inf')
+        for action in actions(board):
+            value = minValue(result(board, action))
+            if value > v:
+                v = value
+                bestAction = action
+    else:
+        v = float('inf')
+        for action in actions(board):
+            value = maxValue(result(board, action))
+            if value < v:
+                v = value
+                bestAction = action
+    return bestAction
